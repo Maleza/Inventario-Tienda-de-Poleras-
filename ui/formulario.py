@@ -73,17 +73,50 @@ def crear_controles(frame, actualizar_todo):
     cantidad = tk.IntVar(value=1)
     ubicacion_var = tk.StringVar(value="local")
 
-    label = tk.Label(frame, text="Selecciona celda",
+    fila = tk.Frame(frame)
+    fila.pack(fill="x")
+
+    # Selección
+    label = tk.Label(fila, text="Selecciona celda",
                      font=("Arial", 10, "bold"))
-    label.pack()
+    label.pack(side="left", padx=10)
 
-    ttk.Label(frame, text="Ubicación").pack()
-
-    ttk.Combobox(frame,
+    # Ubicación
+    ttk.Combobox(fila,
                  textvariable=ubicacion_var,
                  values=["local", "bodega"],
                  state="readonly",
-                 width=10).pack(pady=5)
+                 width=10).pack(side="left", padx=5)
+
+    # Botones
+    def cambiar_stock(valor):
+        if not state.modelo_seleccionado:
+            return
+
+        inventario_servicios.agregar_stock(
+            state.modelo_seleccionado,
+            state.categoria_actual,
+            state.talla_seleccionada,
+            ubicacion_var.get(),
+            valor
+        )
+
+        actualizar_todo()
+
+    ttk.Button(fila, text="-",
+               command=lambda: cambiar_stock(-cantidad.get()),
+               width=4).pack(side="left", padx=5)
+
+    ttk.Entry(fila, textvariable=cantidad,
+              width=5).pack(side="left", padx=5)
+
+    ttk.Button(fila, text="+",
+               command=lambda: cambiar_stock(cantidad.get()),
+               width=4).pack(side="left", padx=5)
+
+    ttk.Button(fila, text="Eliminar",
+               command=lambda: eliminar_modelo(actualizar_todo),
+               width=10).pack(side="right", padx=10)
 
     def actualizar_label():
         if state.modelo_seleccionado:
@@ -94,44 +127,8 @@ def crear_controles(frame, actualizar_todo):
 
     actualizar_label()
 
-    control = tk.Frame(frame)
-    control.pack(pady=5)
 
-    def cambiar_stock(valor):
-
-        if not state.modelo_seleccionado:
-            return
-
-        inventario_servicios.agregar_stock(
-            state.modelo_seleccionado,
-            state.categoria_actual,
-            state.talla_seleccionada,
-            ubicacion_var.get(),  
-            valor
-        )
-
+def eliminar_modelo(actualizar_todo):
+    if state.modelo_seleccionado:
+        inventario_servicios.eliminar_modelo(state.modelo_seleccionado)
         actualizar_todo()
-
-
-
-
-
-    ttk.Button(control, text="-",
-               command=lambda: cambiar_stock(-cantidad.get()),
-               width=5).pack(side="left", padx=5)
-
-    ttk.Entry(control, textvariable=cantidad,
-              width=5).pack(side="left", padx=5)
-
-    ttk.Button(control, text="+",
-               command=lambda: cambiar_stock(cantidad.get()),
-               width=5).pack(side="left", padx=5)
-
-    def eliminar():
-        if state.modelo_seleccionado:
-            inventario_servicios.eliminar_modelo(state.modelo_seleccionado)
-            actualizar_todo()
-    ttk.Button(frame, text="Eliminar Modelo",
-               command=eliminar).pack(pady=5)
-
-

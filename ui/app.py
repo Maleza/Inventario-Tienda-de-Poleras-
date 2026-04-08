@@ -30,20 +30,20 @@ def iniciar_app():
     frame_resumen = tk.LabelFrame(contenedor, text="Resumen")
     frame_resumen.pack(fill="x", pady=5)
 
-    # ✅ PRIMERO crear funciones
+    
     cargar_tabla = tabla.crear_tabla(frame_tabla)
     cargar_resumen = resumen.crear_resumen(frame_resumen)
 
-    # ✅ LUEGO definir función central
+    #FUNCION CENTRAL PARA ACTUALIZAR LOS ELEMENTOS
     def actualizar_todo():
         cargar_tabla()
         cargar_resumen()
 
-    # ✅ LUEGO conectar UI
+    # CONECTAR UI
     formulario.crear_formulario_superior(frame_top, actualizar_todo)
     formulario.crear_controles(frame_bottom, actualizar_todo)
 
-    # ✅ MUY IMPORTANTE: carga inicial
+    # CARGA INICIAL
     actualizar_todo()
 
     root.mainloop()

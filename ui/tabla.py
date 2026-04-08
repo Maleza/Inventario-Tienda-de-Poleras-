@@ -7,15 +7,71 @@ TALLAS = ["9/10", "11/12", "16", "S", "M", "L", "XL", "XXL"]
 
 def crear_tabla(frame):
 
-    contenedor = tk.Frame(frame)
-    contenedor.pack(fill="both", expand=True)
-
     frame.pack_propagate(False)
 
+    # =========================
+    # 🔹 ESTRUCTURA PRINCIPAL
+    # =========================
+    contenedor_principal = tk.Frame(frame)
+    contenedor_principal.pack(fill="both", expand=True)
+
+    # HEADER (fijo)
+    frame_header = tk.Frame(contenedor_principal)
+    frame_header.pack(fill="x")
+
+    # BODY (scroll)
+    frame_body = tk.Frame(contenedor_principal)
+    frame_body.pack(fill="both", expand=True)
+
+    canvas = tk.Canvas(frame_body)
+    scrollbar = tk.Scrollbar(frame_body, orient="vertical", command=canvas.yview)
+
+    contenedor = tk.Frame(canvas)
+
+    canvas.create_window((0, 0), window=contenedor, anchor="nw")
+    canvas.configure(yscrollcommand=scrollbar.set)
+
+    canvas.pack(side="left", fill="both", expand=True)
+    scrollbar.pack(side="right", fill="y")
+
+    # scroll dinámico
+    contenedor.bind(
+        "<Configure>",
+        lambda e: canvas.configure(scrollregion=canvas.bbox("all"))
+    )
+
+    def _on_mousewheel(event):
+        canvas.yview_scroll(int(-1 * (event.delta / 120)), "units")
+
+    canvas.bind_all("<MouseWheel>", _on_mousewheel)
+
+    # =========================
+    # 🔹 FUNCIONES
+    # =========================
     def seleccionar(modelo, talla):
         state.modelo_seleccionado = modelo
         state.talla_seleccionada = talla
         cargar_datos()
+
+    def crear_header():
+        for w in frame_header.winfo_children():
+            w.destroy()
+
+        tk.Label(frame_header, text="Modelo",
+                 bg="#1E1E1E", fg="white",
+                 font=("Segoe UI", 10, "bold"),
+                 padx=5, pady=5)\
+            .grid(row=0, column=0, sticky="nsew")
+
+        for i, talla in enumerate(TALLAS):
+            tk.Label(frame_header, text=talla,
+                     bg="#1E1E1E", fg="white",
+                     font=("Segoe UI", 10, "bold"),
+                     padx=5, pady=5)\
+                .grid(row=0, column=i+1, sticky="nsew")
+
+        for col in range(len(TALLAS) + 1):
+            frame_header.grid_columnconfigure(col, weight=1, uniform="col")
 
     def cargar_datos():
 
@@ -23,32 +79,27 @@ def crear_tabla(frame):
             w.destroy()
 
         datos = inventario_servicios.obtener_stock(state.categoria_actual)
+        filtro = state.busqueda_modelo.lower().strip()
 
         matriz = {}
 
         for (modelo, talla), valores in datos.items():
+
+            if filtro and filtro not in modelo.lower():
+                continue
+
             if modelo not in matriz:
                 matriz[modelo] = {t: {"local": 0, "bodega": 0} for t in TALLAS}
+
             matriz[modelo][talla] = valores
 
         # =========================
-        # 🔹 ENCABEZADOS
+        # 🔹 FILAS
         # =========================
-        tk.Label(contenedor, text="Modelo",
-                 bg="#222", fg="white", font=("Arial", 10, "bold"))\
-            .grid(row=0, column=0, sticky="nsew")
+        for i, (modelo, tallas) in enumerate(matriz.items(), start=0):
 
-        for i, talla in enumerate(TALLAS):
-            tk.Label(contenedor, text=talla,
-                     bg="#222", fg="white", font=("Arial", 10, "bold"))\
-                .grid(row=0, column=i+1, sticky="nsew")
-
-        # =========================
-        # 🔹 FILAS Y CELDAS
-        # =========================
-        for i, (modelo, tallas) in enumerate(matriz.items(), start=1):
-
-            tk.Label(contenedor, text=modelo, bg="#ddd")\
+            # columna modelo
+            tk.Label(contenedor, text=modelo, bg="#f0f0f0", padx=5, pady=5)\
                 .grid(row=i, column=0, sticky="nsew")
 
             for j, talla in enumerate(TALLAS, start=1):
@@ -60,9 +111,6 @@ def crear_tabla(frame):
                     talla == state.talla_seleccionada
                 ) else 1
 
-                # =========================
-                # 🔹 CELDA
-                # =========================
                 celda_frame = tk.Frame(
                     contenedor,
                     relief="solid",
@@ -89,38 +137,23 @@ def crear_tabla(frame):
                 )
                 label_bodega.pack(side="left", fill="both", expand=True)
 
-                # =========================
-                # 🔹 EVENTOS (CORREGIDO)
-                # =========================
+                # eventos
                 def bind_event(widget, m=modelo, t=talla, frame_ref=celda_frame):
 
-                    widget.bind(
-                        "<Button-1>",
-                        lambda e: seleccionar(m, t)
-                    )
-
-                    widget.bind(
-                        "<Enter>",
-                        lambda e: frame_ref.config(bg="#dfe6e9")
-                    )
-
-                    widget.bind(
-                        "<Leave>",
-                        lambda e: frame_ref.config(bg="white")
-                    )
+                    widget.bind("<Button-1>", lambda e: seleccionar(m, t))
+                    widget.bind("<Enter>", lambda e: frame_ref.config(bg="#dfe6e9"))
+                    widget.bind("<Leave>", lambda e: frame_ref.config(bg="white"))
 
                 for w in (celda_frame, label_local, label_bodega):
                     bind_event(w)
 
-        # =========================
-        # 🔹 EXPANSIÓN (UNA SOLA VEZ)
-        # =========================
-        total_columnas = len(TALLAS) + 1
-        for col in range(total_columnas):
+        # expandir columnas
+        for col in range(len(TALLAS) + 1):
             contenedor.grid_columnconfigure(col, weight=1, uniform="col")
 
-        total_filas = len(matriz) + 1
-        for fila in range(total_filas):
-            contenedor.grid_rowconfigure(fila, weight=1)
+    # =========================
+    # 🔹 INIT
+    # =========================
+    crear_header()
 
     return cargar_datos

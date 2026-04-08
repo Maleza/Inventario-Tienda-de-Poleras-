@@ -72,23 +72,44 @@ def crear_controles(frame, actualizar_todo):
 
     cantidad = tk.IntVar(value=1)
     ubicacion_var = tk.StringVar(value="local")
+    busqueda_var = tk.StringVar()
 
     fila = tk.Frame(frame)
     fila.pack(fill="x")
 
-    # Selección
+    # 🔹 BUSCADOR
+    tk.Label(fila, text="Buscar:").pack(side="left", padx=5)
+
+    entrada_busqueda = tk.Entry(fila, textvariable=busqueda_var, width=20)
+    entrada_busqueda.pack(side="left", padx=5)
+
+    
+    ttk.Button(
+        fila,
+        text="X",
+        command=lambda: busqueda_var.set(""),
+        width=3
+    ).pack(side="left", padx=2)
+
+    def filtrar(*args):
+        state.busqueda_modelo = busqueda_var.get()
+        actualizar_todo()
+
+    busqueda_var.trace_add("write", filtrar)
+
+    # 🔹 SELECCIÓN
     label = tk.Label(fila, text="Selecciona celda",
                      font=("Arial", 10, "bold"))
     label.pack(side="left", padx=10)
 
-    # Ubicación
+    # 🔹 UBICACIÓN
     ttk.Combobox(fila,
                  textvariable=ubicacion_var,
                  values=["local", "bodega"],
                  state="readonly",
                  width=10).pack(side="left", padx=5)
 
-    # Botones
+    # 🔹 CONTROL STOCK
     def cambiar_stock(valor):
         if not state.modelo_seleccionado:
             return
@@ -114,10 +135,16 @@ def crear_controles(frame, actualizar_todo):
                command=lambda: cambiar_stock(cantidad.get()),
                width=4).pack(side="left", padx=5)
 
-    ttk.Button(fila, text="Eliminar",
-               command=lambda: eliminar_modelo(actualizar_todo),
-               width=10).pack(side="right", padx=10)
+    # 🔹 ELIMINAR
+    def eliminar():
+        if state.modelo_seleccionado:
+            inventario_servicios.eliminar_modelo(state.modelo_seleccionado)
+            actualizar_todo()
 
+    ttk.Button(fila, text="Eliminar",
+               command=eliminar).pack(side="right", padx=10)
+
+    # 🔹 LABEL DINÁMICO
     def actualizar_label():
         if state.modelo_seleccionado:
             label.config(
@@ -126,9 +153,3 @@ def crear_controles(frame, actualizar_todo):
         frame.after(300, actualizar_label)
 
     actualizar_label()
-
-
-def eliminar_modelo(actualizar_todo):
-    if state.modelo_seleccionado:
-        inventario_servicios.eliminar_modelo(state.modelo_seleccionado)
-        actualizar_todo()

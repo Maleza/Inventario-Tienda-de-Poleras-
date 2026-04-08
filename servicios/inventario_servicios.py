@@ -25,6 +25,21 @@ def obtener_stock(categoria=None):
         resultado[key][ubicacion] = cantidad
 
     return resultado
+#funcion para mostrar el dashboard en el footer
+def obtener_resumen(categoria=None):
+
+    datos = consultas.obtener_inventario(categoria)
+
+    resumen = {}
+
+    for modelo, cat, talla, ubicacion, cantidad in datos:
+
+        if talla not in resumen:
+            resumen[talla] = {"local": 0, "bodega": 0}
+
+        resumen[talla][ubicacion] += cantidad
+
+    return resumen
 
 
 def eliminar_modelo(nombre):

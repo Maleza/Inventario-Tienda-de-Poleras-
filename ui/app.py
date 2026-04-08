@@ -1,6 +1,6 @@
 import tkinter as tk
 from tkinter import ttk
-from ui import tabla, formulario
+from ui import tabla, formulario, resumen
 
 
 def iniciar_app():
@@ -14,24 +14,36 @@ def iniciar_app():
     contenedor = tk.Frame(root)
     contenedor.pack(fill="both", expand=True, padx=10, pady=10)
 
-    # 🔹 TOP → formulario horizontal
+    # 🔹 TOP
     frame_top = tk.LabelFrame(contenedor, text="Agregar Polera")
     frame_top.pack(fill="x", pady=5)
 
-    # 🔹 CENTRO → tabla
+    # 🔹 TABLA
     frame_tabla = tk.LabelFrame(contenedor, text="Inventario")
     frame_tabla.pack(fill="both", expand=True, pady=5)
 
-    # 🔹 BOTTOM → controles
+    # 🔹 CONTROLES
     frame_bottom = tk.LabelFrame(contenedor, text="Control de Stock")
     frame_bottom.pack(fill="x", pady=5)
 
+    # 🔹 RESUMEN
+    frame_resumen = tk.LabelFrame(contenedor, text="Resumen")
+    frame_resumen.pack(fill="x", pady=5)
+
+    # ✅ PRIMERO crear funciones
     cargar_tabla = tabla.crear_tabla(frame_tabla)
+    cargar_resumen = resumen.crear_resumen(frame_resumen)
 
-    formulario.crear_formulario_superior(frame_top, cargar_tabla)
-    formulario.crear_controles(frame_bottom, cargar_tabla)
+    # ✅ LUEGO definir función central
+    def actualizar_todo():
+        cargar_tabla()
+        cargar_resumen()
 
-    cargar_tabla()
+    # ✅ LUEGO conectar UI
+    formulario.crear_formulario_superior(frame_top, actualizar_todo)
+    formulario.crear_controles(frame_bottom, actualizar_todo)
+
+    # ✅ MUY IMPORTANTE: carga inicial
+    actualizar_todo()
 
     root.mainloop()
-    

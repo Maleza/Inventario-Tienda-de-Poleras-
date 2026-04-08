@@ -1,13 +1,14 @@
 import tkinter as tk
 from tkinter import ttk
 from servicios import inventario_servicios
-from ui import state
+from ui import state, resumen, app
+
 
 
 # ===============================
 # 🔹 FORMULARIO SUPERIOR (AGREGAR)
 # ===============================
-def crear_formulario_superior(frame, refrescar_tabla):
+def crear_formulario_superior(frame, actualizar_todo):
 
     frame.config(padx=10, pady=10)
 
@@ -56,7 +57,7 @@ def crear_formulario_superior(frame, refrescar_tabla):
 
         nombre_var.set("")
         cantidad_var.set(1)
-        refrescar_tabla()
+        actualizar_todo()
 
     ttk.Button(frame, text="Agregar Polera",
                command=agregar).grid(row=0, column=10, padx=10)
@@ -65,7 +66,7 @@ def crear_formulario_superior(frame, refrescar_tabla):
 # ===============================
 # 🔹 CONTROLES INFERIORES (+ / -)
 # ===============================
-def crear_controles(frame, refrescar_tabla):
+def crear_controles(frame, actualizar_todo):
 
     frame.config(padx=10, pady=10)
 
@@ -109,7 +110,11 @@ def crear_controles(frame, refrescar_tabla):
             valor
         )
 
-        refrescar_tabla()
+        actualizar_todo()
+
+
+
+
 
     ttk.Button(control, text="-",
                command=lambda: cambiar_stock(-cantidad.get()),
@@ -125,7 +130,8 @@ def crear_controles(frame, refrescar_tabla):
     def eliminar():
         if state.modelo_seleccionado:
             inventario_servicios.eliminar_modelo(state.modelo_seleccionado)
-            refrescar_tabla()
-
+            actualizar_todo()
     ttk.Button(frame, text="Eliminar Modelo",
                command=eliminar).pack(pady=5)
+
+

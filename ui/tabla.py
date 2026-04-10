@@ -4,14 +4,15 @@ from ui import state
 
 TALLAS = ["9/10", "11/12", "16", "S", "M", "L", "XL", "XXL"]
 
+celdas = {}
+filas_modelo = {}
+entrada_activa = None
+
 
 def crear_tabla(frame):
 
     frame.pack_propagate(False)
 
-    # =========================
-    # 🔹 ESTRUCTURA
-    # =========================
     contenedor_principal = tk.Frame(frame)
     contenedor_principal.pack(fill="both", expand=True)
 
@@ -24,108 +25,140 @@ def crear_tabla(frame):
     canvas = tk.Canvas(frame_body, highlightthickness=0)
     scrollbar = tk.Scrollbar(frame_body, orient="vertical", command=canvas.yview)
 
-    canvas.pack(side="left", fill="both", expand=True)
-    scrollbar.pack(side="right", fill="y")
-
     contenedor = tk.Frame(canvas)
+
     window_id = canvas.create_window((0, 0), window=contenedor, anchor="nw")
 
-    canvas.configure(yscrollcommand=scrollbar.set)
-
-    # 🔥 ajustar ancho automático
     def resize_canvas(event):
         canvas.itemconfig(window_id, width=event.width)
 
     canvas.bind("<Configure>", resize_canvas)
+
+    canvas.configure(yscrollcommand=scrollbar.set)
+
+    canvas.pack(side="left", fill="both", expand=True)
+    scrollbar.pack(side="right", fill="y")
 
     contenedor.bind(
         "<Configure>",
         lambda e: canvas.configure(scrollregion=canvas.bbox("all"))
     )
 
-    # scroll SOLO sobre canvas (no global)
-    canvas.bind("<MouseWheel>", lambda e: canvas.yview_scroll(int(-1*(e.delta/120)), "units"))
-
     # =========================
-    # 🔹 CACHE (CLAVE)
+    # 🔹 SELECCIÓN
     # =========================
-    celdas = {}       # (modelo, talla) → (label_local, label_bodega, frame)
-    filas_modelo = {} # modelo → label modelo
-
-    # =========================
-    # 🔹 HEADER
-    # =========================
-    def crear_header():
-        tk.Label(frame_header, text="Modelo",
-                 bg="#1E1E1E", fg="white",
-                 font=("Segoe UI", 10, "bold"),
-                 padx=5, pady=5).grid(row=0, column=0, sticky="nsew")
-
-        for i, talla in enumerate(TALLAS):
-            tk.Label(frame_header, text=talla,
-                     bg="#1E1E1E", fg="white",
-                     font=("Segoe UI", 10, "bold"),
-                     padx=5, pady=5).grid(row=0, column=i+1, sticky="nsew")
-
-        for col in range(len(TALLAS) + 1):
-            frame_header.grid_columnconfigure(col, weight=1, uniform="col")
-            contenedor.grid_columnconfigure(col, weight=1, uniform="col")
-
-    # =========================
-    # 🔹 SELECCIÓN (SIN RECARGA)
-    # =========================
-    def actualizar_seleccion():
-        for (modelo, talla), (_, _, frame_ref) in celdas.items():
-            if modelo == state.modelo_seleccionado and talla == state.talla_seleccionada:
-                frame_ref.config(borderwidth=3)
-            else:
-                frame_ref.config(borderwidth=1)
-
     def seleccionar(modelo, talla):
         state.modelo_seleccionado = modelo
         state.talla_seleccionada = talla
         actualizar_seleccion()
 
-    # =========================
-    # 🔹 CREAR TABLA (SOLO 1 VEZ)
-    # =========================
-    def construir_tabla(matriz):
+    def actualizar_seleccion():
+        for (m, t), (_, _, f) in celdas.items():
+            f.config(borderwidth=3 if (m == state.modelo_seleccionado and t == state.talla_seleccionada) else 1)
 
-        for i, (modelo, tallas) in enumerate(matriz.items()):
+    # =========================
+    # 🔹 HEADER
+    # =========================
+    def crear_header():
+        tk.Label(frame_header, text="Modelo", bg="#222", fg="white").grid(row=0, column=0, sticky="nsew")
 
-            label_modelo = tk.Label(
-                contenedor,
-                text=modelo,
-                bg="#f0f0f0",
-                padx=5,
-                pady=5
+        for i, talla in enumerate(TALLAS):
+            tk.Label(frame_header, text=talla, bg="#222", fg="white").grid(row=0, column=i+1, sticky="nsew")
+
+        for col in range(len(TALLAS)+1):
+            frame_header.grid_columnconfigure(col, weight=1, uniform="col")
+            contenedor.grid_columnconfigure(col, weight=1, uniform="col")
+
+    # =========================
+    # 🔹 EDITOR EXCEL
+    # =========================
+    def editar_celda(modelo, talla):
+
+        global entrada_activa
+
+        if entrada_activa:
+            entrada_activa.destroy()
+
+        l_local, l_bodega, frame_ref = celdas[(modelo, talla)]
+
+        editor = tk.Frame(frame_ref)
+        editor.pack(fill="both", expand=True)
+
+        entry_local = tk.Entry(editor, width=5, justify="center")
+        entry_bodega = tk.Entry(editor, width=5, justify="center")
+
+        entry_local.pack(side="left", fill="both", expand=True)
+        entry_bodega.pack(side="left", fill="both", expand=True)
+
+        entry_local.focus()
+
+        entrada_activa = editor
+
+        def guardar(event=None):
+
+            try:
+                val_local = int(entry_local.get() or 0)
+                val_bodega = int(entry_bodega.get() or 0)
+            except:
+                return
+
+            inventario_servicios.actualizar_stock_directo(
+                modelo,
+                state.categoria_actual,
+                talla,
+                val_local,
+                val_bodega
             )
-            label_modelo.grid(row=i, column=0, sticky="nsew")
-            filas_modelo[modelo] = label_modelo
 
-            for j, talla in enumerate(TALLAS, start=1):
+            editor.destroy()
+            actualizar_tabla()
 
-                celda_frame = tk.Frame(
-                    contenedor,
-                    relief="solid",
-                    borderwidth=1,
-                    bg="white"
-                )
-                celda_frame.grid(row=i, column=j, sticky="nsew")
+        def vender(event=None):
+            # 🔹 resta 1 unidad del LOCAL
+            inventario_servicios.agregar_stock(
+                modelo,
+                state.categoria_actual,
+                talla,
+                "local",
+                -1
+            )
+            editor.destroy()
+            actualizar_tabla()
 
-                label_local = tk.Label(celda_frame)
-                label_local.pack(side="left", fill="both", expand=True)
+        # ENTER = guardar
+        entry_local.bind("<Return>", guardar)
+        entry_bodega.bind("<Return>", guardar)
 
-                label_bodega = tk.Label(celda_frame)
-                label_bodega.pack(side="left", fill="both", expand=True)
+        # SHIFT+ENTER = venta directa
+        entry_local.bind("<Shift-Return>", vender)
 
-                celdas[(modelo, talla)] = (label_local, label_bodega, celda_frame)
+        # ESC = cancelar
+        entry_local.bind("<Escape>", lambda e: editor.destroy())
+        entry_bodega.bind("<Escape>", lambda e: editor.destroy())
 
-                for w in (celda_frame, label_local, label_bodega):
-                    w.bind("<Button-1>", lambda e, m=modelo, t=talla: seleccionar(m, t))
+        # navegación
+        entry_local.bind("<Right>", lambda e: entry_bodega.focus())
+        entry_bodega.bind("<Left>", lambda e: entry_local.focus())
+
+        entry_local.bind("<Down>", lambda e: mover(1, 0, modelo, talla))
+        entry_local.bind("<Up>", lambda e: mover(-1, 0, modelo, talla))
 
     # =========================
-    # 🔹 ACTUALIZAR DATOS (RÁPIDO)
+    # 🔹 NAVEGACIÓN
+    # =========================
+    def mover(df, dc, modelo, talla):
+
+        modelos = list(filas_modelo.keys())
+        fila = modelos.index(modelo)
+        col = TALLAS.index(talla)
+
+        nueva_fila = max(0, min(len(modelos)-1, fila+df))
+        nueva_col = max(0, min(len(TALLAS)-1, col+dc))
+
+        editar_celda(modelos[nueva_fila], TALLAS[nueva_col])
+
+    # =========================
+    # 🔹 ACTUALIZAR TABLA
     # =========================
     def actualizar_tabla():
 
@@ -144,32 +177,46 @@ def crear_tabla(frame):
 
             matriz[modelo][talla] = valores
 
-        # 🔥 construir solo si no existe
-        if not celdas:
-            construir_tabla(matriz)
+        fila = 0
 
-        # 🔥 actualizar valores sin redibujar
-        for (modelo, talla), (l_local, l_bodega, frame_ref) in celdas.items():
+        for modelo, tallas in matriz.items():
+
+            if modelo not in filas_modelo:
+
+                lbl = tk.Label(contenedor, text=modelo, bg="#eee")
+                lbl.grid(row=fila, column=0, sticky="nsew")
+
+                filas_modelo[modelo] = lbl
+
+                for j, talla in enumerate(TALLAS, start=1):
+
+                    frame_ref = tk.Frame(contenedor, relief="solid", borderwidth=1)
+                    frame_ref.grid(row=fila, column=j, sticky="nsew")
+
+                    l1 = tk.Label(frame_ref)
+                    l1.pack(side="left", expand=True, fill="both")
+
+                    l2 = tk.Label(frame_ref)
+                    l2.pack(side="left", expand=True, fill="both")
+
+                    celdas[(modelo, talla)] = (l1, l2, frame_ref)
+
+                    for w in (frame_ref, l1, l2):
+                        w.bind("<Button-1>", lambda e, m=modelo, t=talla: seleccionar(m, t))
+
+                    frame_ref.bind("<Double-1>", lambda e, m=modelo, t=talla: editar_celda(m, t))
+
+                fila += 1
+
+        for (modelo, talla), (l1, l2, _) in celdas.items():
 
             val = matriz.get(modelo, {}).get(talla, {"local": 0, "bodega": 0})
 
-            l_local.config(
-                text=str(val["local"]),
-                bg="#4CAF50" if val["local"] > 0 else "#EEEEEE",
-                fg="white" if val["local"] > 0 else "black"
-            )
-
-            l_bodega.config(
-                text=str(val["bodega"]),
-                bg="#F44336" if val["bodega"] > 0 else "#EEEEEE",
-                fg="white" if val["bodega"] > 0 else "black"
-            )
+            l1.config(text=val["local"], bg="#4CAF50" if val["local"] else "#eee")
+            l2.config(text=val["bodega"], bg="#F44336" if val["bodega"] else "#eee")
 
         actualizar_seleccion()
 
-    # =========================
-    # 🔹 INIT
-    # =========================
     crear_header()
 
     return actualizar_tabla

@@ -11,6 +11,7 @@ def agregar_stock(modelo, categoria, talla, ubicacion, cantidad):
     consultas.insertar_inventario(modelo_id, talla_id, ubicacion, cantidad)
 
 
+
 def obtener_stock(categoria=None):
     datos = consultas.obtener_inventario(categoria)
 
@@ -41,6 +42,9 @@ def obtener_resumen(categoria=None):
 
     return resumen
 
+def actualizar_stock_directo(modelo, categoria, talla, local, bodega):
+    # update directo (no suma)
+    pass
 
 def eliminar_modelo(nombre):
     consultas.eliminar_modelo(nombre)

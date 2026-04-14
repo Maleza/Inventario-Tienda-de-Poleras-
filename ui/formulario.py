@@ -1,7 +1,7 @@
 import tkinter as tk
 from tkinter import ttk
 from servicios import inventario_servicios
-from ui import state, resumen, app
+from ui import state
 
 
 
@@ -23,10 +23,11 @@ def crear_formulario_superior(frame, actualizar_todo):
     tk.Entry(frame, textvariable=nombre_var, width=25).grid(row=0, column=1, padx=5)
 
     tk.Label(frame, text="Categoría").grid(row=0, column=2, padx=5)
-    ttk.Combobox(frame, textvariable=categoria_var,
-                 values=["Musica", "Animacion"],
-                 state="readonly",
-                 width=12).grid(row=0, column=3, padx=5)
+    combo_categoria_form = ttk.Combobox(frame, textvariable=categoria_var,
+                                        values=["Musica", "Animacion"],
+                                        state="readonly",
+                                        width=12)
+    combo_categoria_form.grid(row=0, column=3, padx=5)
 
     tk.Label(frame, text="Talla").grid(row=0, column=4, padx=5)
     ttk.Combobox(frame, textvariable=talla_var,
@@ -59,6 +60,14 @@ def crear_formulario_superior(frame, actualizar_todo):
         cantidad_var.set(1)
         actualizar_todo()
 
+    def cambiar_categoria_form(event=None):
+        state.categoria_actual = categoria_var.get()
+        state.modelo_seleccionado = None
+        state.talla_seleccionada = None
+        actualizar_todo()
+
+    combo_categoria_form.bind("<<ComboboxSelected>>", cambiar_categoria_form)
+
     ttk.Button(frame, text="Agregar Polera",
                command=agregar).grid(row=0, column=10, padx=10)
 
@@ -73,33 +82,10 @@ def crear_controles(frame, actualizar_todo):
     cantidad = tk.IntVar(value=1)
     ubicacion_var = tk.StringVar(value="local")
     busqueda_var = tk.StringVar()
+    categoria_tabla_var = tk.StringVar(value=state.categoria_actual)
 
     fila = tk.Frame(frame)
     fila.pack(fill="x")
-        
-    # 🔹 FILTRO CATEGORÍA
-    tk.Label(fila, text="Categoría:").pack(side="left", padx=5)
-
-    categoria_var = tk.StringVar(value=state.categoria_actual)
-
-    def cambiar_categoria(categoria):
-        state.categoria_actual = categoria
-        state.modelo_seleccionado = None
-        state.talla_seleccionada = None
-        categoria_var.set(categoria)
-        actualizar_todo()
-
-    ttk.Button(
-        fila,
-        text="Música",
-        command=lambda: cambiar_categoria("Musica")
-    ).pack(side="left", padx=2)
-
-    ttk.Button(
-        fila,
-        text="Animación",
-        command=lambda: cambiar_categoria("Animacion")
-    ).pack(side="left", padx=2)
 
     # 🔹 BUSCADOR
     tk.Label(fila, text="Buscar:").pack(side="left", padx=5)
@@ -120,6 +106,26 @@ def crear_controles(frame, actualizar_todo):
         actualizar_todo()
 
     busqueda_var.trace_add("write", filtrar)
+
+    # 🔹 CATEGORÍA DE TABLA
+    tk.Label(fila, text="Categoría:").pack(side="left", padx=(10, 5))
+
+    combo_categoria = ttk.Combobox(
+        fila,
+        textvariable=categoria_tabla_var,
+        values=["Musica", "Animacion"],
+        state="readonly",
+        width=12
+    )
+    combo_categoria.pack(side="left", padx=5)
+
+    def cambiar_categoria(event=None):
+        state.categoria_actual = categoria_tabla_var.get()
+        state.modelo_seleccionado = None
+        state.talla_seleccionada = None
+        actualizar_todo()
+
+    combo_categoria.bind("<<ComboboxSelected>>", cambiar_categoria)
 
     # 🔹 SELECCIÓN
     label = tk.Label(fila, text="Selecciona celda",

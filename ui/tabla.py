@@ -7,6 +7,7 @@ TALLAS = ["9/10", "11/12", "16", "S", "M", "L", "XL", "XXL"]
 celdas = {}
 filas_modelo = {}
 entrada_activa = None
+__all__ = ["crear_tabla"]
 
 
 def crear_tabla(frame):
@@ -59,6 +60,55 @@ def crear_tabla(frame):
                 highlightthickness=1 if seleccionado else 0,
                 highlightbackground="#1976D2"
             )
+
+    def construir_grilla(matriz):
+        for widget in contenedor.winfo_children():
+            widget.destroy()
+
+        celdas.clear()
+        filas_modelo.clear()
+
+        for fila, (modelo, _tallas) in enumerate(matriz.items()):
+            lbl = tk.Label(contenedor, text=modelo, bg="#eee")
+            lbl.grid(row=fila, column=0, sticky="nsew")
+            filas_modelo[modelo] = lbl
+
+            for j, talla in enumerate(TALLAS, start=1):
+                frame_ref = tk.Frame(contenedor, relief="solid", borderwidth=1)
+                frame_ref.grid(row=fila, column=j, sticky="nsew")
+
+                l1 = tk.Label(frame_ref)
+                l1.pack(side="left", expand=True, fill="both")
+
+                l2 = tk.Label(frame_ref)
+                l2.pack(side="left", expand=True, fill="both")
+
+                celdas[(modelo, talla)] = (l1, l2, frame_ref)
+
+                for w in (frame_ref, l1, l2):
+                    w.bind("<Button-1>", lambda e, m=modelo, t=talla: seleccionar(m, t))
+
+                frame_ref.bind("<Double-1>", lambda e, m=modelo, t=talla: editar_celda(m, t))
+
+    def asegurar_celda_visible(modelo, talla):
+        if (modelo, talla) not in celdas:
+            return
+
+        frame_ref = celdas[(modelo, talla)][2]
+        frame.update_idletasks()
+
+        viewport_top = canvas.canvasy(0)
+        viewport_bottom = viewport_top + canvas.winfo_height()
+        celda_top = frame_ref.winfo_y()
+        celda_bottom = celda_top + frame_ref.winfo_height()
+
+        total_alto = max(1, contenedor.winfo_height())
+
+        if celda_top < viewport_top:
+            canvas.yview_moveto(max(0.0, celda_top / total_alto))
+        elif celda_bottom > viewport_bottom:
+            destino = (celda_bottom - canvas.winfo_height()) / total_alto
+            canvas.yview_moveto(min(1.0, max(0.0, destino)))
 
     # =========================
     # 🔹 HEADER
@@ -208,7 +258,12 @@ def crear_tabla(frame):
         nueva_fila = max(0, min(len(modelos) - 1, fila + df))
         nueva_col = max(0, min(len(TALLAS) - 1, col + dc))
 
-        editar_celda(modelos[nueva_fila], TALLAS[nueva_col])
+        siguiente_modelo = modelos[nueva_fila]
+        siguiente_talla = TALLAS[nueva_col]
+
+        seleccionar(siguiente_modelo, siguiente_talla)
+        asegurar_celda_visible(siguiente_modelo, siguiente_talla)
+        editar_celda(siguiente_modelo, siguiente_talla)
         return "break"
 
     # =========================
@@ -232,37 +287,15 @@ def crear_tabla(frame):
             if talla in matriz[modelo]:
                 matriz[modelo][talla] = valores
 
-        if entrada_activa:
-            entrada_activa.destroy()
-            entrada_activa = None
+        modelos_actuales = list(filas_modelo.keys())
+        modelos_nuevos = list(matriz.keys())
+        requiere_reconstruccion = modelos_actuales != modelos_nuevos or not celdas
 
-        for widget in contenedor.winfo_children():
-            widget.destroy()
-
-        celdas.clear()
-        filas_modelo.clear()
-
-        for fila, (modelo, _tallas) in enumerate(matriz.items()):
-            lbl = tk.Label(contenedor, text=modelo, bg="#eee")
-            lbl.grid(row=fila, column=0, sticky="nsew")
-            filas_modelo[modelo] = lbl
-
-            for j, talla in enumerate(TALLAS, start=1):
-                frame_ref = tk.Frame(contenedor, relief="solid", borderwidth=1)
-                frame_ref.grid(row=fila, column=j, sticky="nsew")
-
-                l1 = tk.Label(frame_ref)
-                l1.pack(side="left", expand=True, fill="both")
-
-                l2 = tk.Label(frame_ref)
-                l2.pack(side="left", expand=True, fill="both")
-
-                celdas[(modelo, talla)] = (l1, l2, frame_ref)
-
-                for w in (frame_ref, l1, l2):
-                    w.bind("<Button-1>", lambda e, m=modelo, t=talla: seleccionar(m, t))
-
-                frame_ref.bind("<Double-1>", lambda e, m=modelo, t=talla: editar_celda(m, t))
+        if requiere_reconstruccion:
+            if entrada_activa:
+                entrada_activa.destroy()
+                entrada_activa = None
+            construir_grilla(matriz)
 
         for (modelo, talla), (l1, l2, _) in celdas.items():
             val = matriz.get(modelo, {}).get(talla, {"local": 0, "bodega": 0})

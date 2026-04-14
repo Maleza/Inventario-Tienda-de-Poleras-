@@ -10,8 +10,9 @@ entrada_activa = None
 
 
 def crear_tabla(frame):
-
     frame.pack_propagate(False)
+    celdas.clear()
+    filas_modelo.clear()
 
     contenedor_principal = tk.Frame(frame)
     contenedor_principal.pack(fill="both", expand=True)
@@ -26,14 +27,12 @@ def crear_tabla(frame):
     scrollbar = tk.Scrollbar(frame_body, orient="vertical", command=canvas.yview)
 
     contenedor = tk.Frame(canvas)
-
     window_id = canvas.create_window((0, 0), window=contenedor, anchor="nw")
 
     def resize_canvas(event):
         canvas.itemconfig(window_id, width=event.width)
 
     canvas.bind("<Configure>", resize_canvas)
-
     canvas.configure(yscrollcommand=scrollbar.set)
 
     canvas.pack(side="left", fill="both", expand=True)
@@ -68,9 +67,9 @@ def crear_tabla(frame):
         tk.Label(frame_header, text="Modelo", bg="#222", fg="white").grid(row=0, column=0, sticky="nsew")
 
         for i, talla in enumerate(TALLAS):
-            tk.Label(frame_header, text=talla, bg="#222", fg="white").grid(row=0, column=i+1, sticky="nsew")
+            tk.Label(frame_header, text=talla, bg="#222", fg="white").grid(row=0, column=i + 1, sticky="nsew")
 
-        for col in range(len(TALLAS)+1):
+        for col in range(len(TALLAS) + 1):
             frame_header.grid_columnconfigure(col, weight=1, uniform="col")
             contenedor.grid_columnconfigure(col, weight=1, uniform="col")
 
@@ -78,8 +77,10 @@ def crear_tabla(frame):
     # 🔹 EDITOR EXCEL
     # =========================
     def editar_celda(modelo, talla):
-
         global entrada_activa
+
+        if (modelo, talla) not in celdas:
+            return
 
         if entrada_activa:
             entrada_activa.destroy()
@@ -97,23 +98,23 @@ def crear_tabla(frame):
 
         entry_local.pack(side="left", fill="both", expand=True)
         entry_bodega.pack(side="left", fill="both", expand=True)
-        
+
         entry_local.insert(0, valor_local)
         entry_bodega.insert(0, valor_bodega)
         entry_local.select_range(0, tk.END)
-
         entry_local.focus()
 
         entrada_activa = editor
         seleccionar(modelo, talla)
 
         def guardar(event=None):
+            global entrada_activa
 
             try:
                 val_local = int(entry_local.get() or 0)
                 val_bodega = int(entry_bodega.get() or 0)
             except ValueError:
-                return
+                return "break"
 
             inventario_servicios.actualizar_stock_directo(
                 modelo,
@@ -125,13 +126,16 @@ def crear_tabla(frame):
             state.modelo_seleccionado = modelo
             state.talla_seleccionada = talla
 
+            if entrada_activa:
+                entrada_activa.destroy()
+                entrada_activa = None
 
-            editor.destroy()
             actualizar_tabla()
-            return "break"  
+            return "break"
 
         def vender(event=None):
-            # 🔹 resta 1 unidad del LOCAL
+            global entrada_activa
+
             inventario_servicios.agregar_stock(
                 modelo,
                 state.categoria_actual,
@@ -142,19 +146,26 @@ def crear_tabla(frame):
             state.modelo_seleccionado = modelo
             state.talla_seleccionada = talla
 
-            editor.destroy()
+            if entrada_activa:
+                entrada_activa.destroy()
+                entrada_activa = None
+
             actualizar_tabla()
             return "break"
 
         def cancelar(event=None):
-            editor.destroy()
+            global entrada_activa
+
+            if entrada_activa:
+                entrada_activa.destroy()
+                entrada_activa = None
+
             actualizar_tabla()
             return "break"
 
         def mover_y_editar(df, dc):
             guardar()
             return mover(df, dc, modelo, talla)
-
 
         # ENTER = guardar
         entry_local.bind("<Return>", guardar)
@@ -178,15 +189,12 @@ def crear_tabla(frame):
         entry_bodega.bind("<Up>", lambda e: mover_y_editar(-1, 0))
 
         # click fuera del editor guarda cambios
-        editor.bind("<FocusOut>", lambda e: frame.after(1, lambda: guardar()))
-
-
+        editor.bind("<FocusOut>", lambda e: frame.after(1, guardar))
 
     # =========================
     # 🔹 NAVEGACIÓN
     # =========================
     def mover(df, dc, modelo, talla):
-
         modelos = list(filas_modelo.keys())
         if not modelos:
             return "break"
@@ -197,12 +205,11 @@ def crear_tabla(frame):
         fila = modelos.index(modelo)
         col = TALLAS.index(talla)
 
-        nueva_fila = max(0, min(len(modelos)-1, fila+df))
-        nueva_col = max(0, min(len(TALLAS)-1, col+dc))
+        nueva_fila = max(0, min(len(modelos) - 1, fila + df))
+        nueva_col = max(0, min(len(TALLAS) - 1, col + dc))
 
         editar_celda(modelos[nueva_fila], TALLAS[nueva_col])
         return "break"
-    
 
     # =========================
     # 🔹 ACTUALIZAR TABLA
@@ -216,68 +223,55 @@ def crear_tabla(frame):
         matriz = {}
 
         for (modelo, talla), valores in datos.items():
-
             if filtro and filtro not in modelo.lower():
                 continue
 
             if modelo not in matriz:
                 matriz[modelo] = {t: {"local": 0, "bodega": 0} for t in TALLAS}
 
-            matriz[modelo][talla] = valores
+            if talla in matriz[modelo]:
+                matriz[modelo][talla] = valores
 
         if entrada_activa:
             entrada_activa.destroy()
             entrada_activa = None
 
-            for widget in contenedor.winfo_children():
-                widget.destroy()
-            celdas.clear()
-            filas_modelo.clear()
+        for widget in contenedor.winfo_children():
+            widget.destroy()
 
+        celdas.clear()
+        filas_modelo.clear()
 
-            for fila, (modelo, tallas) in enumerate(matriz.items()):
+        for fila, (modelo, _tallas) in enumerate(matriz.items()):
+            lbl = tk.Label(contenedor, text=modelo, bg="#eee")
+            lbl.grid(row=fila, column=0, sticky="nsew")
+            filas_modelo[modelo] = lbl
 
-                lbl = tk.Label(contenedor, text=modelo, bg="#eee")
-                lbl.grid(row=fila, column=0, sticky="nsew")
-                filas_modelo[modelo] = lbl
+            for j, talla in enumerate(TALLAS, start=1):
+                frame_ref = tk.Frame(contenedor, relief="solid", borderwidth=1)
+                frame_ref.grid(row=fila, column=j, sticky="nsew")
 
+                l1 = tk.Label(frame_ref)
+                l1.pack(side="left", expand=True, fill="both")
 
-                for j, talla in enumerate(TALLAS, start=1):
+                l2 = tk.Label(frame_ref)
+                l2.pack(side="left", expand=True, fill="both")
 
-                    frame_ref = tk.Frame(contenedor, relief="solid", borderwidth=1)
-                    frame_ref.grid(row=fila, column=j, sticky="nsew")
+                celdas[(modelo, talla)] = (l1, l2, frame_ref)
 
-
-                    l1 = tk.Label(frame_ref)
-                    l1.pack(side="left", expand=True, fill="both")
-
-
-                    l2 = tk.Label(frame_ref)
-                    l2.pack(side="left", expand=True, fill="both")
-
-                    celdas[(modelo, talla)] = (l1, l2, frame_ref)
-                    
-
-                    for w in (frame_ref, l1, l2):
-                        w.bind("<Button-1>", lambda e, m=modelo, t=talla: seleccionar(m, t))
-                        w.bind("<Return>", lambda e, m=modelo, t=talla: editar_celda(m, t))
+                for w in (frame_ref, l1, l2):
+                    w.bind("<Button-1>", lambda e, m=modelo, t=talla: seleccionar(m, t))
 
                 frame_ref.bind("<Double-1>", lambda e, m=modelo, t=talla: editar_celda(m, t))
 
-
-
         for (modelo, talla), (l1, l2, _) in celdas.items():
-
             val = matriz.get(modelo, {}).get(talla, {"local": 0, "bodega": 0})
-
             l1.config(text=val["local"], bg="#4CAF50" if val["local"] else "#eee")
             l2.config(text=val["bodega"], bg="#F44336" if val["bodega"] else "#eee")
-        
+
         if state.modelo_seleccionado not in filas_modelo:
             state.modelo_seleccionado = None
             state.talla_seleccionada = None
-
-
 
         actualizar_seleccion()
 

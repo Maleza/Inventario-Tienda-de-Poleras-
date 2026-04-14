@@ -65,6 +65,20 @@ def insertar_inventario(modelo_id, talla_id, ubicacion, cantidad):
     conn.commit()
     conn.close()
 
+def actualizar_cantidad_inventario(modelo_id, talla_id, ubicacion, cantidad):
+    conn = conectar_db()
+    cursor = conn.cursor()
+
+    cursor.execute("""
+    INSERT INTO inventario (id_modelo, id_talla, ubicacion, cantidad)
+    VALUES (?, ?, ?, ?)
+    ON CONFLICT(id_modelo, id_talla, ubicacion)
+    DO UPDATE SET cantidad = excluded.cantidad
+    """, (modelo_id, talla_id, ubicacion, max(0, int(cantidad))))
+
+    conn.commit()
+    conn.close()
+
 
 def obtener_inventario(categoria=None):
     conn = conectar_db()
@@ -96,3 +110,5 @@ def eliminar_modelo(nombre):
     cursor.execute("DELETE FROM modelos WHERE nombre=?", (nombre,))
     conn.commit()
     conn.close()
+
+    

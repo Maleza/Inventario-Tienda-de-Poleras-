@@ -76,6 +76,30 @@ def crear_controles(frame, actualizar_todo):
 
     fila = tk.Frame(frame)
     fila.pack(fill="x")
+        
+    # 🔹 FILTRO CATEGORÍA
+    tk.Label(fila, text="Categoría:").pack(side="left", padx=5)
+
+    categoria_var = tk.StringVar(value=state.categoria_actual)
+
+    def cambiar_categoria(categoria):
+        state.categoria_actual = categoria
+        state.modelo_seleccionado = None
+        state.talla_seleccionada = None
+        categoria_var.set(categoria)
+        actualizar_todo()
+
+    ttk.Button(
+        fila,
+        text="Música",
+        command=lambda: cambiar_categoria("Musica")
+    ).pack(side="left", padx=2)
+
+    ttk.Button(
+        fila,
+        text="Animación",
+        command=lambda: cambiar_categoria("Animacion")
+    ).pack(side="left", padx=2)
 
     # 🔹 BUSCADOR
     tk.Label(fila, text="Buscar:").pack(side="left", padx=5)

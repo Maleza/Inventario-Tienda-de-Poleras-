@@ -43,8 +43,12 @@ def obtener_resumen(categoria=None):
     return resumen
 
 def actualizar_stock_directo(modelo, categoria, talla, local, bodega):
-    # update directo (no suma)
-    pass
+    modelo_id = consultas.insertar_modelo(modelo, categoria)
+    talla_id = consultas.insertar_talla(talla)
+
+    consultas.actualizar_cantidad_inventario(modelo_id, talla_id, "local", local)
+    consultas.actualizar_cantidad_inventario(modelo_id, talla_id, "bodega", bodega)
+
 
 def eliminar_modelo(nombre):
     consultas.eliminar_modelo(nombre)

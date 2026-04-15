@@ -2,7 +2,7 @@ import tkinter as tk
 from servicios import inventario_servicios
 from ui import state
 
-TALLAS = ["9/10", "11/12", "16", "S", "M", "L", "XL", "XXL"]
+TALLAS = ["7/8","9/10", "11/12", "16", "S", "M", "L", "XL", "XXL"]
 
 celdas = {}
 filas_modelo = {}

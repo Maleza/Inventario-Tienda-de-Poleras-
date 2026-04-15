@@ -183,3 +183,7 @@ def crear_controles(frame, actualizar_todo):
         frame.after(300, actualizar_label)
 
     actualizar_label()
+
+
+
+    

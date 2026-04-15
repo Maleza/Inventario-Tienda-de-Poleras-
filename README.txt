@@ -203,3 +203,18 @@ Agregar productos
 Seleccionar celda
 Ajustar stock
 Consultar resumen
+
+
+
+
+
+Comando para Convertir py a exe
+
+
+pyinstaller --onefile --windowed ^
+--name InventarioPoleras ^
+--icon=assets/icono.ico ^
+--add-data "assets;assets" ^
+--hidden-import=tkinter ^
+main.py
+

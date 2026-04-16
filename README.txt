@@ -215,6 +215,7 @@ pyinstaller --onefile --windowed ^
 --name InventarioPoleras ^
 --icon=assets/icono.ico ^
 --add-data "assets;assets" ^
+--add-data "assets/banner.gif;assets" ^
 --hidden-import=tkinter ^
 main.py
 

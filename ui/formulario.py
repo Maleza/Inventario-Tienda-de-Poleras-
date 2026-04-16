@@ -96,7 +96,7 @@ def crear_formulario_superior(frame, actualizar_todo):
     ttk.Combobox(
         frame,
         textvariable=talla_var,
-        values=["9/10", "11/12", "16", "S", "M", "L", "XL", "XXL"],
+        values=["7/8", "9/10", "11/12", "16", "S", "M", "L", "XL", "XXL"],
         state="readonly",
         width=6,
         style="Dark.TCombobox",

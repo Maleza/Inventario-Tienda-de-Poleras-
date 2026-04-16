@@ -18,7 +18,7 @@ def _insertar_gif_superior(parent):
 
     titulo = tk.Label(
         banner,
-        text="▂▃▄▅▆▇█▓▒░ℑ𝔫𝔳𝔢𝔫𝔱𝔞𝔯𝔦𝔬  𝔐𝔲𝔰𝔲𝔟𝔦 Hℜ░▒▓█▇▆▅▄▃▂ ",
+        text="♪♫•*¨*•.¸¸★*♪。☆*★* ☥  𝔐𝔲𝔰𝔲𝔟𝔦 HR░▒▓█  ☥ ☆*★*♪。☆*★*♪。¸¸.•*¨*•♫♪ ",
         bg=BG_TERTIARY,
         fg=FG_PRIMARY,
         font=("Segoe UI", 13, "bold"),
@@ -86,13 +86,14 @@ def iniciar_app():
 
     _insertar_gif_superior(contenedor)
 
-    _, frame_top = _crear_labelframe(contenedor, "Agregar Polera")
+    _, frame_top = _crear_labelframe(contenedor, "Agregar Polera      ══════·")
 
-    seccion_tabla, frame_tabla = _crear_labelframe(contenedor, "Inventario")
+    seccion_tabla, frame_tabla = _crear_labelframe(contenedor, "Inventario            ══════·")
+
     seccion_tabla.pack_configure(fill="both", expand=True)
 
-    _, frame_bottom = _crear_labelframe(contenedor, "Control de Stock")
-    _, frame_resumen = _crear_labelframe(contenedor, "Dashboard inferior")
+    _, frame_bottom = _crear_labelframe(contenedor, "Control de Stock       ════·")
+    _, frame_resumen = _crear_labelframe(contenedor, "Resumen             ══════·")
 
     cargar_tabla = tabla.crear_tabla(frame_tabla)
     cargar_resumen = resumen.crear_resumen(frame_resumen)

@@ -1,6 +1,7 @@
 import tkinter as tk
 from servicios import inventario_servicios
 from ui import state
+from ui.theme import ACCENT, BG_ACCENT, BG_PRIMARY, BG_SECONDARY, FG_MUTED, FG_PRIMARY, SUCCESS, WARNING
 
 TALLAS = ["7/8","9/10", "11/12", "16", "S", "M", "L", "XL", "XXL"]
 
@@ -15,19 +16,21 @@ def crear_tabla(frame):
     celdas.clear()
     filas_modelo.clear()
 
-    contenedor_principal = tk.Frame(frame)
+    frame.config(bg=BG_PRIMARY)
+
+    contenedor_principal = tk.Frame(frame, bg=BG_PRIMARY)
     contenedor_principal.pack(fill="both", expand=True)
 
-    frame_header = tk.Frame(contenedor_principal)
+    frame_header = tk.Frame(contenedor_principal, bg=BG_PRIMARY)
     frame_header.pack(fill="x")
 
-    frame_body = tk.Frame(contenedor_principal)
+    frame_body = tk.Frame(contenedor_principal, bg=BG_PRIMARY)
     frame_body.pack(fill="both", expand=True)
 
-    canvas = tk.Canvas(frame_body, highlightthickness=0)
+    canvas = tk.Canvas(frame_body, highlightthickness=0, bg=BG_PRIMARY)
     scrollbar = tk.Scrollbar(frame_body, orient="vertical", command=canvas.yview)
 
-    contenedor = tk.Frame(canvas)
+    contenedor = tk.Frame(canvas, bg=BG_PRIMARY)
     window_id = canvas.create_window((0, 0), window=contenedor, anchor="nw")
 
     def resize_canvas(event):
@@ -58,7 +61,7 @@ def crear_tabla(frame):
             f.config(
                 borderwidth=3 if seleccionado else 1,
                 highlightthickness=1 if seleccionado else 0,
-                highlightbackground="#1976D2"
+                highlightbackground=ACCENT
             )
 
     def construir_grilla(matriz):
@@ -69,18 +72,18 @@ def crear_tabla(frame):
         filas_modelo.clear()
 
         for fila, (modelo, _tallas) in enumerate(matriz.items()):
-            lbl = tk.Label(contenedor, text=modelo, bg="#eee")
+            lbl = tk.Label(contenedor, text=modelo, bg=BG_SECONDARY, fg=FG_PRIMARY)
             lbl.grid(row=fila, column=0, sticky="nsew")
             filas_modelo[modelo] = lbl
 
             for j, talla in enumerate(TALLAS, start=1):
-                frame_ref = tk.Frame(contenedor, relief="solid", borderwidth=1)
+                frame_ref = tk.Frame(contenedor, relief="solid", borderwidth=1, bg=BG_SECONDARY)
                 frame_ref.grid(row=fila, column=j, sticky="nsew")
 
-                l1 = tk.Label(frame_ref)
+                l1 = tk.Label(frame_ref, bg=BG_SECONDARY, fg=FG_MUTED)
                 l1.pack(side="left", expand=True, fill="both")
 
-                l2 = tk.Label(frame_ref)
+                l2 = tk.Label(frame_ref, bg=BG_SECONDARY, fg=FG_MUTED)
                 l2.pack(side="left", expand=True, fill="both")
 
                 celdas[(modelo, talla)] = (l1, l2, frame_ref)
@@ -114,10 +117,10 @@ def crear_tabla(frame):
     # 🔹 HEADER
     # =========================
     def crear_header():
-        tk.Label(frame_header, text="Modelo", bg="#222", fg="white").grid(row=0, column=0, sticky="nsew")
+        tk.Label(frame_header, text="Modelo", bg=BG_ACCENT, fg=FG_PRIMARY).grid(row=0, column=0, sticky="nsew")
 
         for i, talla in enumerate(TALLAS):
-            tk.Label(frame_header, text=talla, bg="#222", fg="white").grid(row=0, column=i + 1, sticky="nsew")
+            tk.Label(frame_header, text=talla, bg=BG_ACCENT, fg=FG_PRIMARY).grid(row=0, column=i + 1, sticky="nsew")
 
         for col in range(len(TALLAS) + 1):
             frame_header.grid_columnconfigure(col, weight=1, uniform="col")
@@ -137,14 +140,14 @@ def crear_tabla(frame):
 
         l_local, l_bodega, frame_ref = celdas[(modelo, talla)]
 
-        editor = tk.Frame(frame_ref)
+        editor = tk.Frame(frame_ref, bg=BG_SECONDARY)
         editor.pack(fill="both", expand=True)
 
         valor_local = l_local.cget("text") or "0"
         valor_bodega = l_bodega.cget("text") or "0"
 
-        entry_local = tk.Entry(editor, width=5, justify="center")
-        entry_bodega = tk.Entry(editor, width=5, justify="center")
+        entry_local = tk.Entry(editor, width=5, justify="center", bg=BG_PRIMARY, fg=FG_PRIMARY, insertbackground=FG_PRIMARY)
+        entry_bodega = tk.Entry(editor, width=5, justify="center", bg=BG_PRIMARY, fg=FG_PRIMARY, insertbackground=FG_PRIMARY)
 
         entry_local.pack(side="left", fill="both", expand=True)
         entry_bodega.pack(side="left", fill="both", expand=True)
@@ -299,8 +302,8 @@ def crear_tabla(frame):
 
         for (modelo, talla), (l1, l2, _) in celdas.items():
             val = matriz.get(modelo, {}).get(talla, {"local": 0, "bodega": 0})
-            l1.config(text=val["local"], bg="#4CAF50" if val["local"] else "#eee")
-            l2.config(text=val["bodega"], bg="#F44336" if val["bodega"] else "#eee")
+            l1.config(text=val["local"], bg=SUCCESS if val["local"] else BG_SECONDARY, fg=FG_PRIMARY if val["local"] else FG_MUTED)
+            l2.config(text=val["bodega"], bg=WARNING if val["bodega"] else BG_SECONDARY, fg=FG_PRIMARY if val["bodega"] else FG_MUTED)
 
         if state.modelo_seleccionado not in filas_modelo:
             state.modelo_seleccionado = None
